@@ -6,9 +6,9 @@ import os
 from datetime import datetime
 from PIL import Image
 import time
-from streamlit_js_eval import streamlit_js_eval
+from streamlit_geolocation import streamlit_geolocation
 
-st.set_page_config(page_title="Nokta Atışı GPS Mezarlık Sistemi", layout="wide", page_icon="🪦")
+st.set_page_config(page_title="Kesin GPSli Mobil Mezarlık Sistemi", layout="wide", page_icon="🪦")
 
 DOSYA_ADI = "mezarlik_konum_veritabani.xlsx"
 FOTO_KLASORU = "mezar_fotograflari"
@@ -37,10 +37,16 @@ if "harita_key" not in st.session_state:
 if "user_location" not in st.session_state:
     st.session_state.user_location = None
 
-# İnternet sunucusunda çalışırken cihazın GPS koordinatını çeken güvenli sistem
-device_loc = streamlit_js_eval(data_of='navigator.geolocation.getCurrentPosition', wrapper='(p) => {return {lat: p.coords.latitude, lng: p.coords.longitude};}', key='gps_device')
+st.title("🪦 Donanımsal GPS Navigasyonlu Mezarlık Sistemi")
 
-st.title("🪦 Nokta Atışı GPS Navigasyonlu Mezarlık Sistemi")
+# 📡 DONANIMSAL MOBIL GPS MODÜLÜ (Buton Olarak Ekrana Gelir)
+st.sidebar.subheader("📡 Mobil GPS Doğrulama")
+st.sidebar.write("Sahada yürürken canlı konumunuzu haritaya aktarmak için aşağıdaki butona basın:")
+cihaz_gps = streamlit_geolocation()
+
+# GPS verisi geldiyse hafızaya al
+if cihaz_gps and cihaz_gps.get('latitude'):
+    st.session_state.user_location = [cihaz_gps['latitude'], cihaz_gps['longitude']]
 
 sekme1, sekme2, sekme3 = st.tabs(["🗺️ Canlı Harita & Rota", "✍️ Tekli Mezar Kaydı", "🤖 Otomatik Konum Motoru (Grid)"])
 
@@ -90,7 +96,7 @@ with sekme2:
     mezar_no = st.number_input("🔢 Mezar No:", min_value=1, value=1)
     olum_tarihi = st.date_input("📅 Ölüm Tarihi:", value=datetime.now())
     yakin_iletisim = st.text_input("📞 Yakın İletişim:")
-    notlar = st.text_area("ℹ️ Notlar:")
+    notlar = st.text_area("ℹimg_ Notlar:")
     yuklenen_foto = st.file_uploader("📸 Fotoğraf Yükle:", type=["png", "jpg", "jpeg"])
     
     if st.button("💾 Kaydet", type="primary", use_container_width=True):
@@ -132,6 +138,7 @@ with sekme1:
                     st.image(f_yolu, use_container_width=True)
                 
                 c1, c2 = st.columns(2)
+                
                 if c1.button("📍 Git (Mezara Odaklan)", key=f"git_{idx}", use_container_width=True):
                     st.session_state.harita_merkez = [float(row['Enlem']), float(row['Boylam'])]
                     st.session_state.zoom_seviyesi = 20
@@ -139,31 +146,33 @@ with sekme1:
                     st.rerun()
                     
                 if c2.button("🚗 Mevcut Konumdan Doğrudan Rota Çiz", key=f"rota_{idx}", use_container_width=True):
-                    if device_loc and 'lat' in device_loc:
-                        st.session_state.user_location = [device_loc['lat'], device_loc['lng']]
+                    if st.session_state.user_location:
                         st.session_state.rota_hedef = [float(row['Enlem']), float(row['Boylam'])]
-                        st.session_state.harita_merkez = [(device_loc['lat'] + float(row['Enlem'])) / 2, (device_loc['lng'] + float(row['Boylam'])) / 2]
+                        st.session_state.harita_merkez = [(st.session_state.user_location[0] + float(row['Enlem'])) / 2, (st.session_state.user_location[1] + float(row['Boylam'])) / 2]
                         st.session_state.zoom_seviyesi = 18
                         st.session_state.harita_key = str(time.time())
                         st.rerun()
                     else:
-                        st.error("Cihazınızın GPS konumuna ulaşılamadı. Lütfen konum izinlerinizi kontrol edin!")
+                        st.error("Önce sol menüdeki 'Mevcut Konumu Al' butonuna basarak telefon GPS bağlantısını aktif edin!")
 
     if st.session_state.rota_hedef:
-        st.success("🎯 Navigasyon Aktif: Bulunduğunuz konumdan mezara giden rota başarıyla haritaya eklendi.")
+        st.success("🎯 Navigasyon Aktif: Şu an bulunduğunuz konumdan mezara giden rota başarıyla haritaya eklendi.")
         if st.button("❌ Rotayı Kapat ve Temizle", use_container_width=True): 
             st.session_state.rota_hedef = None
-            st.session_state.user_location = None
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
+    # Harita Nesnesi
     m = folium.Map(location=st.session_state.harita_merkez, zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
-    if st.session_state.user_location and st.session_state.rota_hedef:
-        folium.Marker(location=st.session_state.user_location, popup="Siz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
-        folium.PolyLine(locations=[st.session_state.user_location, st.session_state.rota_hedef], color="red", weight=6).add_to(m)
+    # Arka planda aktifleşen rotayı haritaya bas
+    if st.session_state.user_location:
+        folium.Marker(location=st.session_state.user_location, popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
+        if st.session_state.rota_hedef:
+            folium.PolyLine(locations=[st.session_state.user_location, st.session_state.rota_hedef], color="red", weight=6).add_to(m)
 
+    # Mezarları haritaya ekle
     for _, row in st.session_state.df.dropna(subset=['Enlem', 'Boylam']).iterrows():
         popup_txt = f"<b>{row['Vefat Eden']}</b><br>{row['Mezar_Adasi']}<br>Sıra: {row['Sira_No']} No: {row['Mezar_No']}"
         folium.Marker(location=[float(row["Enlem"]), float(row["Boylam"])], popup=folium.Popup(popup_txt, max_width=200), icon=folium.Icon(color="green")).add_to(m)
