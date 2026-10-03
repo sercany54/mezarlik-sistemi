@@ -7,6 +7,8 @@ from datetime import datetime
 from PIL import Image
 import time
 from streamlit_geolocation import streamlit_geolocation
+import qrcode
+from io import BytesIO
 
 st.set_page_config(page_title="Kesin GPSli Mobil Mezarlık Sistemi", layout="wide", page_icon="🪦")
 
@@ -53,7 +55,6 @@ with sekme3:
     st.subheader("🤖 Ada/Sıra Numarasına Göre Otomatik Konumlandır")
     secilen_ada = st.text_input("📍 Konumlandırılacak Ada İsmi:", placeholder="Örn: Ada 4")
     
-    # HATA BURADA KESİN OLARAK DÜZELTİLDİ: Liste doğrudan float yapılmadı, elemanları [0] ve [1] olarak ayrıştırıldı.
     ref_enlem = st.number_input("Ada Başlangıç Enlemi:", format="%.6f", value=float(st.session_state.harita_merkez[0]), key="ref_lat")
     ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez[1]), key="ref_lng")
     
@@ -155,8 +156,19 @@ with sekme1:
                 st.caption("Navigasyon İçin Bu Koordinatı Kopyalayın:")
                 st.code(koordinat_str)
                 
-                qr_url = f"https://qrserver.com{koordinat_str}%26travelmode=walking"
-                st.image(qr_url, caption="Navigasyonu Başlatmak İçin Bu Karekoda Basılı Tutun veya Okutun", width=150)
+                # 🚀 KESİN ÇÖZÜM: Python'ın kendi kütüphanesiyle yerel hafızada QR üretme (Asla dış sitelere bağlanmaz ve kilitlenmez)
+                maps_target_url = f"https://google.com{koordinat_str}&travelmode=walking"
+                qr = qrcode.QRCode(version=1, box_size=10, border=2)
+                qr.add_data(maps_target_url)
+                qr.make(fit=True)
+                qr_img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Resmi belleğe yazıp Streamlit'e iade etme
+                buf = BytesIO()
+                qr_img.save(buf, format="PNG")
+                byte_im = buf.getvalue()
+                
+                st.image(byte_im, caption="Navigasyonu Başlatmak İçin Bu Karekoda Basılı Tutun veya Okutun", width=170)
 
     if st.session_state.rota_hedef:
         st.success("🎯 Kuş Uçuşu Rota Aktif: Kırmızı hattı takip ederek mezar taşına yürüyebilirsiniz.")
@@ -165,7 +177,7 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # Harita Nesnesi Lokasyon İndeksi Tam Sabitlendi
+    # Harita Nesnesi
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
@@ -176,10 +188,3 @@ with sekme1:
 
     for _, row in st.session_state.df.dropna(subset=['Enlem', 'Boylam']).iterrows():
         popup_txt = f"<b>{row['Vefat Eden']}</b><br>{row['Mezar_Adasi']}<br>Sıra: {row['Sira_No']} No: {row['Mezar_No']}"
-        folium.Marker(location=[float(row["Enlem"]), float(row["Boylam"])], popup=folium.Popup(popup_txt, max_width=200), icon=folium.Icon(color="green")).add_to(m)
-
-    m.add_child(folium.LatLngPopup())
-    harita_verisi = st_folium(m, width="100%", height=550, key=st.session_state.harita_key)
-    
-    if harita_verisi and harita_verisi.get("last_clicked") and not st.session_state.rota_hedef:
-        st.session_state.harita_merkez = [float(harita_verisi["last_clicked"]["lat"]), float(harita_verisi["last_clicked"]["lng"])]

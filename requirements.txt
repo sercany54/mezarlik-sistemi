@@ -6,3 +6,4 @@ openpyxl
 Pillow
 streamlit-js-eval
 streamlit-geolocation
+qrcode
