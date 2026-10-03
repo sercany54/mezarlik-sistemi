@@ -72,7 +72,7 @@ with sekme3:
                     try: sira, no = int(row["Sira_No"]), int(row["Mezar_No"])
                     except: continue 
                     
-                    y_ekseni_kayma = (sira - 1) * (MEZAR_UZUNLUK + SIRA_ARASI_BOSLUK) * METRE_TO_DEG_LAT
+                    y_ekseni_kayma = (sira - 1) * (MEZAR_UZUNU_BOSLUK if 'SIRA_ARASI_BOSLUK' in locals() else 1.0) * METRE_TO_DEG_LAT
                     x_ekseni_kayma = (no - 1) * MEZAR_GENISLIK * METRE_TO_DEG_LNG
                     
                     st.session_state.df.at[idx, "Enlem"] = ref_enlem - y_ekseni_kayma
@@ -156,13 +156,9 @@ with sekme1:
                 st.caption("Navigasyon İçin Bu Koordinatı Kopyalayın:")
                 st.code(koordinat_str)
                 
-                # Google Haritalar'ı telefonda temizce açacak mutlak güvenli link
                 maps_target_url = f"https://google.com{koordinat_str}&travelmode=walking"
-                
-                # Tıklanabilir doğrudan mobil yazı linki
                 st.markdown(f'<a href="{maps_target_url}" target="_blank" style="display:inline-block; padding:10px 20px; background-color:#2e7d32; color:white; text-decoration:none; border-radius:5px; font-weight:bold; width:100%; text-align:center;">↗️ Google Haritalar Uygulamasında Aç</a>', unsafe_allow_html=True)
                 
-                # Karekod Motoru
                 qr = qrcode.QRCode(version=1, box_size=10, border=2)
                 qr.add_data(maps_target_url)
                 qr.make(fit=True)
@@ -180,10 +176,12 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # HARİTA HATASI BURADA KESİN DÜZELTİLDİ: ve indeksleri doğru yerleştirildi
+    # HARİTA BLOKLARI KESİN GÜVENLİ HALE GETİRİLDİ
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
     if st.session_state.user_location:
-        folium.Marker(location=st.session_state.user_location, popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
+        folium.Marker(location=[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
         if st.session_state.rota_hedef:
+            folium.PolyLine(locations=[[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], st.session_state.rota_hedef], color="red", weight=6).add_to(m)
+
