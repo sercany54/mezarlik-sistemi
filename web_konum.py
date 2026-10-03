@@ -44,7 +44,7 @@ st.sidebar.write("Sahada yürürken canlı konumunuzu haritaya aktarmak için a�
 cihaz_gps = streamlit_geolocation()
 
 if cihaz_gps and cihaz_gps.get('latitude'):
-    st.session_state.user_location = [cihaz_gps['latitude'], cihaz_gps['longitude']]
+    st.session_state.user_location = [float(cihaz_gps['latitude']), float(cihaz_gps['longitude'])]
 
 sekme1, sekme2, sekme3 = st.tabs(["🗺️ Canlı Harita & Rota", "✍️ Tekli Mezar Kaydı", "🤖 Otomatik Konum Motoru (Grid)"])
 
@@ -52,8 +52,10 @@ sekme1, sekme2, sekme3 = st.tabs(["🗺️ Canlı Harita & Rota", "✍️ Tekli 
 with sekme3:
     st.subheader("🤖 Ada/Sıra Numarasına Göre Otomatik Konumlandır")
     secilen_ada = st.text_input("📍 Konumlandırılacak Ada İsmi:", placeholder="Örn: Ada 4")
-    ref_enlem = st.number_input("Ada Başlangıç Enlemi:", format="%.6f", value=float(st.session_state.harita_merkez), key="ref_lat")
-    ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez), key="ref_lng")
+    
+    # HATA BURADA KESİN OLARAK DÜZELTİLDİ: Liste doğrudan float yapılmadı, elemanları [0] ve [1] olarak ayrıştırıldı.
+    ref_enlem = st.number_input("Ada Başlangıç Enlemi:", format="%.6f", value=float(st.session_state.harita_merkez[0]), key="ref_lat")
+    ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez[1]), key="ref_lng")
     
     if st.button("⚡ Bu Adadaki Tüm Mezarları Otomatik Konumlandır", type="primary", use_container_width=True):
         if not secilen_ada.strip():
@@ -109,8 +111,8 @@ with sekme2:
             yeni_satir = pd.DataFrame([{
                 "İndeks": len(st.session_state.df)+1, "Vefat Eden": vefat_eden, "Mezar_Adasi": m_adasi,
                 "Sira_No": sira_no, "Mezar_No": mezar_no, "Olum_Tarihi": olum_tarihi.strftime('%Y-%m-%d'),
-                "Yakin_Iletisim": yakin_iletisim, "Notlar": notlar, "Enlem": st.session_state.harita_merkez,
-                "Boylam": st.session_state.harita_merkez, "Foto_Yolu": foto_yolu
+                "Yakin_Iletisim": yakin_iletisim, "Notlar": notlar, "Enlem": float(st.session_state.harita_merkez[0]),
+                "Boylam": float(st.session_state.harita_merkez[1]), "Foto_Yolu": foto_yolu
             }])
             st.session_state.df = pd.concat([st.session_state.df, yeni_satir], ignore_index=True)
             verileri_kaydet(st.session_state.df)
@@ -135,7 +137,6 @@ with sekme1:
                 if isinstance(f_yolu, str) and f_yolu.strip() and os.path.exists(f_yolu): 
                     st.image(f_yolu, use_container_width=True)
                 
-                # Sütunları 3'e çıkardık (Git, İç Rota, Google Navigasyon)
                 c1, c2, c3 = st.columns(3)
                 
                 if c1.button("📍 Haritada Bul", key=f"git_{idx}", use_container_width=True):
@@ -147,14 +148,13 @@ with sekme1:
                 if c2.button("📐 Düz Çizgi Çiz", key=f"rota_{idx}", use_container_width=True):
                     if st.session_state.user_location:
                         st.session_state.rota_hedef = [float(row['Enlem']), float(row['Boylam'])]
-                        st.session_state.harita_merkez = [(st.session_state.user_location + float(row['Enlem'])) / 2, (st.session_state.user_location + float(row['Boylam'])) / 2]
+                        st.session_state.harita_merkez = [(float(st.session_state.user_location[0]) + float(row['Enlem'])) / 2, (float(st.session_state.user_location[1]) + float(row['Boylam'])) / 2]
                         st.session_state.zoom_seviyesi = 18
                         st.session_state.harita_key = str(time.time())
                         st.rerun()
                     else:
                         st.error("Önce sol menüdeki 'Mevcut Konumu Al' butonuna basın!")
                 
-                # 🚀 GOOGLE HARİTALAR NAVİGASYON BAĞLANTISI (Uygulamayı açar)
                 maps_url = f"https://google.com{row['Enlem']},{row['Boylam']}&travelmode=walking"
                 c3.link_button("🔊 Sesli Navigasyon", maps_url, use_container_width=True)
 
@@ -166,7 +166,7 @@ with sekme1:
             st.rerun()
 
     # Harita Nesnesi
-    m = folium.Map(location=st.session_state.harita_merkez, zoom_start=st.session_state.zoom_seviyesi)
+    m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
     if st.session_state.user_location:
@@ -182,6 +182,6 @@ with sekme1:
     harita_verisi = st_folium(m, width="100%", height=550, key=st.session_state.harita_key)
     
     if harita_verisi and harita_verisi.get("last_clicked") and not st.session_state.rota_hedef:
-        st.session_state.harita_merkez = [harita_verisi["last_clicked"]["lat"], harita_verisi["last_clicked"]["lng"]]
+        st.session_state.harita_merkez = [float(harita_verisi["last_clicked"]["lat"]), float(harita_verisi["last_clicked"]["lng"])]
         st.session_state.zoom_seviyesi = harita_verisi.get("zoom", 19)
         st.rerun()
