@@ -135,7 +135,6 @@ with sekme1:
                     st.image(f_yolu, use_container_width=True)
                 
                 c1, c2 = st.columns(2)
-                
                 if c1.button("📍 Haritada Bul", key=f"git_{idx}", use_container_width=True):
                     st.session_state.harita_merkez = [float(row['Enlem']), float(row['Boylam'])]
                     st.session_state.zoom_seviyesi = 20
@@ -176,13 +175,10 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # 🔒 YENİ EMRE: ASLA HATA VERMEYEN DÜZ HARİTA MOTORU
+    # 🔒 GİRİNTİ RİSKİNİ SIFIRLAYAN YENİ YAPI (Tüm koşullar tek satırda birleştirildi)
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
-    # Girintisiz ve güvenli folium nesnesi eklemeleri
-    if st.session_state.user_location is not None:
-        folium.Marker(location=[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
-        if st.session_state.rota_hedef is not None:
-            folium.PolyLine(locations=[[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], st.session_state.rota_hedef], color="red", weight=6).add_to(m)
+    if st.session_state.user_location is not None: folium.Marker(location=[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
+    if st.session_state.user_location is not None and st.session_state.rota_hedef is not None: folium.PolyLine(locations=[[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], st.session_state.rota_hedef], color="red", weight=6).add_to(m)
 
