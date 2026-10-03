@@ -156,7 +156,6 @@ with sekme1:
                 st.caption("Navigasyon İçin Bu Koordinatı Kopyalayın:")
                 st.code(koordinat_str)
                 
-                # LINK HATASI DÜZELTİLDİ: Araya resmi yönlendirme parametreleri eklendi
                 maps_target_url = f"https://google.com{koordinat_str}&travelmode=walking"
                 st.markdown(f'<a href="{maps_target_url}" target="_blank" style="display:inline-block; padding:10px 20px; background-color:#2e7d32; color:white; text-decoration:none; border-radius:5px; font-weight:bold; width:100%; text-align:center;">↗️ Google Haritalar Uygulamasında Aç</a>', unsafe_allow_html=True)
                 
@@ -177,10 +176,13 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # HARİTA HATASI KESİN ÇÖZÜM: [0] ve [1] indeksleri eklenerek listenin çökmesi engellendi
+    # HARİTA YERLEŞİMİ VE TÜM KOŞULLAR TAMAMEN BAĞIMSIZ HALE GETİRİLDİ
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
-    if st.session_state.user_location:
+    # Kullanıcı Konumu Kontrolü
+    if st.session_state.user_location is not None:
         folium.Marker(location=[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
-        if st.session_state.rota_hedef:
+
+    # Rota Çizgisi Kontrolü
+    if st.session_state.user_location is not None and st.session_state.rota_hedef is not None:
