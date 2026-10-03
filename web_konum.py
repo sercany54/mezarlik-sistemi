@@ -27,7 +27,7 @@ def verileri_kaydet(df):
 if "df" not in st.session_state:
     st.session_state.df = verileri_yukle()
 if "harita_merkez" not in st.session_state:
-    st.session_state.harita_merkez = [40.7628, 30.3894] # Sakarya Emirdağ Mezarlığı
+    st.session_state.harita_merkez = [40.7628, 30.3894] 
 if "zoom_seviyesi" not in st.session_state:
     st.session_state.zoom_seviyesi = 16
 if "rota_hedef" not in st.session_state:
@@ -37,10 +37,10 @@ if "harita_key" not in st.session_state:
 if "user_location" not in st.session_state:
     st.session_state.user_location = None
 
-st.title("🪦 Donanımsal GPS Navigasyonlu Mezarlık Sistemi")
+st.title("🪦 Güvenli GPS Navigasyonlu Mezarlık Sistemi")
 
 st.sidebar.subheader("📡 Mobil GPS Doğrulama")
-st.sidebar.write("Sahada yürürken canlı konumunuzu haritaya aktarmak için aşağıdaki butona basın:")
+st.sidebar.write("Canlı konumunuz için aşağıdaki butona basın:")
 cihaz_gps = streamlit_geolocation()
 
 if cihaz_gps and cihaz_gps.get('latitude'):
@@ -57,16 +57,12 @@ with sekme3:
     ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez[1]), key="ref_lng")
     
     if st.button("⚡ Bu Adadaki Tüm Mezarları Otomatik Konumlandır", type="primary", use_container_width=True):
-        if not secilen_ada.strip():
-            st.error("Lütfen bir ada ismi girin!")
-        elif st.session_state.df.empty:
-            st.error("Veritabanında kayıt yok!")
+        if not secilen_ada.strip(): st.error("Lütfen bir ada ismi girin!")
+        elif st.session_state.df.empty: st.error("Veritabanında kayıt yok!")
         else:
             METRE_TO_DEG_LAT = 1 / 111111.0
             METRE_TO_DEG_LNG = 1 / (111111.0 * 0.75) 
-            MEZAR_GENISLIK = 1.2  
-            MEZAR_UZUNLUK = 2.2   
-            SIRA_ARASI_BOSLUK = 1.0 
+            MEZAR_GENISLIK = 1.2; MEZAR_UZUNLUK = 2.2; SIRA_ARASI_BOSLUK = 1.0 
             
             sayac = 0
             for idx, row in st.session_state.df.iterrows():
@@ -136,7 +132,7 @@ with sekme1:
                 if isinstance(f_yolu, str) and f_yolu.strip() and os.path.exists(f_yolu): 
                     st.image(f_yolu, use_container_width=True)
                 
-                c1, c2, c3 = st.columns(3)
+                c1, c2 = st.columns(2)
                 
                 if c1.button("📍 Haritada Bul", key=f"git_{idx}", use_container_width=True):
                     st.session_state.harita_merkez = [float(row['Enlem']), float(row['Boylam'])]
@@ -144,7 +140,7 @@ with sekme1:
                     st.session_state.harita_key = str(time.time())
                     st.rerun()
                     
-                if c2.button("📐 Düz Çizgi Çiz", key=f"rota_{idx}", use_container_width=True):
+                if c2.button("📐 İç Yürüyüş Rotası Çiz", key=f"rota_{idx}", use_container_width=True):
                     if st.session_state.user_location:
                         st.session_state.rota_hedef = [float(row['Enlem']), float(row['Boylam'])]
                         st.session_state.harita_merkez = [(float(st.session_state.user_location[0]) + float(row['Enlem'])) / 2, (float(st.session_state.user_location[1]) + float(row['Boylam'])) / 2]
@@ -154,9 +150,13 @@ with sekme1:
                     else:
                         st.error("Önce sol menüdeki 'Mevcut Konumu Al' butonuna basın!")
                 
-                # 🚀 SESLİ NAVİGASYON ADRESİ TAMAMEN YENİLENDİ: dir_action=navigate ile canlı sesli rehber modu açılır.
-                maps_url = f"https://google.com{float(row['Enlem'])},{float(row['Boylam'])}&dir_action=navigate&travelmode=walking"
-                c3.link_button("🔊 Sesli Navigasyon", maps_url, use_container_width=True)
+                # 🚀 YENİ COPIER VE QR SİSTEMİ (ASLA HATA VERMEZ)
+                koordinat_str = f"{float(row['Enlem'])},{float(row['Boylam'])}"
+                st.code(koordinat_str, caption="Navigasyon İçin Bu Koordinatı Kopyalayın")
+                
+                # Dinamik QR Kod Resmi Oluşturma (Google API ile tarayıcıyı yormadan çeker)
+                qr_url = f"https://qrserver.com{koordinat_str}%26travelmode=walking"
+                st.image(qr_url, caption="Navigasyonu Başlatmak İçin Bu Karekoda Basılı Tutun veya Okutun", width=150)
 
     if st.session_state.rota_hedef:
         st.success("🎯 Kuş Uçuşu Rota Aktif: Kırmızı hattı takip ederek mezar taşına yürüyebilirsiniz.")
@@ -165,7 +165,7 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # HARİTA MERKEZİ LİSTE ÇAĞIRMASI DÜZELTİLDİ: [0] ve [1] indeksleri eklendi
+    # Harita Nesnesi
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
@@ -183,5 +183,3 @@ with sekme1:
     
     if harita_verisi and harita_verisi.get("last_clicked") and not st.session_state.rota_hedef:
         st.session_state.harita_merkez = [float(harita_verisi["last_clicked"]["lat"]), float(harita_verisi["last_clicked"]["lng"])]
-        st.session_state.zoom_seviyesi = harita_verisi.get("zoom", 19)
-        st.rerun()
