@@ -154,8 +154,8 @@ with sekme1:
                     else:
                         st.error("Önce sol menüdeki 'Mevcut Konumu Al' butonuna basın!")
                 
-                # 🚀 LİNK BAĞLANTISI KESİN OLARAK DÜZELTİLDİ: Değişkenler dize biçimlendirmesi ile hatasız birleştirildi
-                maps_url = f"https://google.com{float(row['Enlem'])},{float(row['Boylam'])}&travelmode=walking"
+                # 🚀 SESLİ NAVİGASYON ADRESİ TAMAMEN YENİLENDİ: dir_action=navigate ile canlı sesli rehber modu açılır.
+                maps_url = f"https://google.com{float(row['Enlem'])},{float(row['Boylam'])}&dir_action=navigate&travelmode=walking"
                 c3.link_button("🔊 Sesli Navigasyon", maps_url, use_container_width=True)
 
     if st.session_state.rota_hedef:
@@ -165,7 +165,7 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # Harita Nesnesi
+    # HARİTA MERKEZİ LİSTE ÇAĞIRMASI DÜZELTİLDİ: [0] ve [1] indeksleri eklendi
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
