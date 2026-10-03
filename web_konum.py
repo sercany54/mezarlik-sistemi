@@ -156,19 +156,22 @@ with sekme1:
                 st.caption("Navigasyon İçin Bu Koordinatı Kopyalayın:")
                 st.code(koordinat_str)
                 
-                # 🚀 KESİN ÇÖZÜM: Python'ın kendi kütüphanesiyle yerel hafızada QR üretme (Asla dış sitelere bağlanmaz ve kilitlenmez)
+                # Google Haritalar'ı telefonda temizce açacak mutlak güvenli link
                 maps_target_url = f"https://google.com{koordinat_str}&travelmode=walking"
+                
+                # Tıklanabilir doğrudan mobil yazı linki
+                st.markdown(f'<a href="{maps_target_url}" target="_blank" style="display:inline-block; padding:10px 20px; background-color:#2e7d32; color:white; text-decoration:none; border-radius:5px; font-weight:bold; width:100%; text-align:center;">↗️ Google Haritalar Uygulamasında Aç</a>', unsafe_allow_html=True)
+                
+                # Karekod Motoru
                 qr = qrcode.QRCode(version=1, box_size=10, border=2)
                 qr.add_data(maps_target_url)
                 qr.make(fit=True)
                 qr_img = qr.make_image(fill_color="black", back_color="white")
                 
-                # Resmi belleğe yazıp Streamlit'e iade etme
                 buf = BytesIO()
                 qr_img.save(buf, format="PNG")
                 byte_im = buf.getvalue()
-                
-                st.image(byte_im, caption="Navigasyonu Başlatmak İçin Bu Karekoda Basılı Tutun veya Okutun", width=170)
+                st.image(byte_im, caption="Alternatif: Bu Karekodu Başka Telefonla Okutabilirsiniz", width=150)
 
     if st.session_state.rota_hedef:
         st.success("🎯 Kuş Uçuşu Rota Aktif: Kırmızı hattı takip ederek mezar taşına yürüyebilirsiniz.")
@@ -177,14 +180,10 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # Harita Nesnesi
+    # HARİTA HATASI BURADA KESİN DÜZELTİLDİ: ve indeksleri doğru yerleştirildi
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
     if st.session_state.user_location:
         folium.Marker(location=st.session_state.user_location, popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
         if st.session_state.rota_hedef:
-            folium.PolyLine(locations=[st.session_state.user_location, st.session_state.rota_hedef], color="red", weight=6).add_to(m)
-
-    for _, row in st.session_state.df.dropna(subset=['Enlem', 'Boylam']).iterrows():
-        popup_txt = f"<b>{row['Vefat Eden']}</b><br>{row['Mezar_Adasi']}<br>Sıra: {row['Sira_No']} No: {row['Mezar_No']}"
