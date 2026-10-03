@@ -53,7 +53,6 @@ with sekme3:
     st.subheader("🤖 Ada/Sıra Numarasına Göre Otomatik Konumlandır")
     secilen_ada = st.text_input("📍 Konumlandırılacak Ada İsmi:", placeholder="Örn: Ada 4")
     
-    # HATA BURADA KESİN OLARAK DÜZELTİLDİ: Liste doğrudan float yapılmadı, elemanları [0] ve [1] olarak ayrıştırıldı.
     ref_enlem = st.number_input("Ada Başlangıç Enlemi:", format="%.6f", value=float(st.session_state.harita_merkez[0]), key="ref_lat")
     ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez[1]), key="ref_lng")
     
@@ -155,7 +154,8 @@ with sekme1:
                     else:
                         st.error("Önce sol menüdeki 'Mevcut Konumu Al' butonuna basın!")
                 
-                maps_url = f"https://google.com{row['Enlem']},{row['Boylam']}&travelmode=walking"
+                # 🚀 LİNK BAĞLANTISI KESİN OLARAK DÜZELTİLDİ: Değişkenler dize biçimlendirmesi ile hatasız birleştirildi
+                maps_url = f"https://google.com{float(row['Enlem'])},{float(row['Boylam'])}&travelmode=walking"
                 c3.link_button("🔊 Sesli Navigasyon", maps_url, use_container_width=True)
 
     if st.session_state.rota_hedef:
