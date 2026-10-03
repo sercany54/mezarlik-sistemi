@@ -53,8 +53,8 @@ with sekme3:
     st.subheader("🤖 Ada/Sıra Numarasına Göre Otomatik Konumlandır")
     secilen_ada = st.text_input("📍 Konumlandırılacak Ada İsmi:", placeholder="Örn: Ada 4")
     
-    ref_enlem = st.number_input("Ada Başlangıç Enlemi:", format="%.6f", value=float(st.session_state.harita_merkez[0]), key="ref_lat")
-    ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez[1]), key="ref_lng")
+    ref_enlem = st.number_input("Ada Başlangıç Enlemi:", format="%.6f", value=float(st.session_state.harita_merkez), key="ref_lat")
+    ref_boylam = st.number_input("Ada Başlangıç Boylamı:", format="%.6f", value=float(st.session_state.harita_merkez), key="ref_lng")
     
     if st.button("⚡ Bu Adadaki Tüm Mezarları Otomatik Konumlandır", type="primary", use_container_width=True):
         if not secilen_ada.strip(): st.error("Lütfen bir ada ismi girin!")
@@ -106,8 +106,8 @@ with sekme2:
             yeni_satir = pd.DataFrame([{
                 "İndeks": len(st.session_state.df)+1, "Vefat Eden": vefat_eden, "Mezar_Adasi": m_adasi,
                 "Sira_No": sira_no, "Mezar_No": mezar_no, "Olum_Tarihi": olum_tarihi.strftime('%Y-%m-%d'),
-                "Yakin_Iletisim": yakin_iletisim, "Notlar": notlar, "Enlem": float(st.session_state.harita_merkez[0]),
-                "Boylam": float(st.session_state.harita_merkez[1]), "Foto_Yolu": foto_yolu
+                "Yakin_Iletisim": yakin_iletisim, "Notlar": notlar, "Enlem": float(st.session_state.harita_merkez),
+                "Boylam": float(st.session_state.harita_merkez), "Foto_Yolu": foto_yolu
             }])
             st.session_state.df = pd.concat([st.session_state.df, yeni_satir], ignore_index=True)
             verileri_kaydet(st.session_state.df)
@@ -143,18 +143,18 @@ with sekme1:
                 if c2.button("📐 İç Yürüyüş Rotası Çiz", key=f"rota_{idx}", use_container_width=True):
                     if st.session_state.user_location:
                         st.session_state.rota_hedef = [float(row['Enlem']), float(row['Boylam'])]
-                        st.session_state.harita_merkez = [(float(st.session_state.user_location[0]) + float(row['Enlem'])) / 2, (float(st.session_state.user_location[1]) + float(row['Boylam'])) / 2]
+                        st.session_state.harita_merkez = [(float(st.session_state.user_location) + float(row['Enlem'])) / 2, (float(st.session_state.user_location) + float(row['Boylam'])) / 2]
                         st.session_state.zoom_seviyesi = 18
                         st.session_state.harita_key = str(time.time())
                         st.rerun()
                     else:
                         st.error("Önce sol menüdeki 'Mevcut Konumu Al' butonuna basın!")
                 
-                # 🚀 YENİ COPIER VE QR SİSTEMİ (ASLA HATA VERMEZ)
+                # Hata Düzeltildi: st.caption ve st.code ayrıldı
                 koordinat_str = f"{float(row['Enlem'])},{float(row['Boylam'])}"
-                st.code(koordinat_str, caption="Navigasyon İçin Bu Koordinatı Kopyalayın")
+                st.caption("Navigasyon İçin Bu Koordinatı Kopyalayın:")
+                st.code(koordinat_str)
                 
-                # Dinamik QR Kod Resmi Oluşturma (Google API ile tarayıcıyı yormadan çeker)
                 qr_url = f"https://qrserver.com{koordinat_str}%26travelmode=walking"
                 st.image(qr_url, caption="Navigasyonu Başlatmak İçin Bu Karekoda Basılı Tutun veya Okutun", width=150)
 
@@ -166,7 +166,7 @@ with sekme1:
             st.rerun()
 
     # Harita Nesnesi
-    m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
+    m = folium.Map(location=[float(st.session_state.harita_merkez), float(st.session_state.harita_merkez)], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
     if st.session_state.user_location:
@@ -183,3 +183,5 @@ with sekme1:
     
     if harita_verisi and harita_verisi.get("last_clicked") and not st.session_state.rota_hedef:
         st.session_state.harita_merkez = [float(harita_verisi["last_clicked"]["lat"]), float(harita_verisi["last_clicked"]["lng"])]
+        st.session_state.zoom_seviyesi = harita_verisi.get("zoom", 19)
+        st.rerun()
