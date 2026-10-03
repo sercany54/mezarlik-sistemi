@@ -176,13 +176,13 @@ with sekme1:
             st.session_state.harita_key = str(time.time())
             st.rerun()
 
-    # HARİTA YERLEŞİMİ VE TÜM KOŞULLAR TAMAMEN BAĞIMSIZ HALE GETİRİLDİ
+    # 🔒 YENİ EMRE: ASLA HATA VERMEYEN DÜZ HARİTA MOTORU
     m = folium.Map(location=[float(st.session_state.harita_merkez[0]), float(st.session_state.harita_merkez[1])], zoom_start=st.session_state.zoom_seviyesi)
     folium.TileLayer(tiles='https://google.com{x}&y={y}&z={z}', attr='Google', name='Google Uydu').add_to(m)
 
-    # Kullanıcı Konumu Kontrolü
+    # Girintisiz ve güvenli folium nesnesi eklemeleri
     if st.session_state.user_location is not None:
         folium.Marker(location=[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], popup="Mevcut Konumunuz", icon=folium.Icon(color="blue", icon="user")).add_to(m)
+        if st.session_state.rota_hedef is not None:
+            folium.PolyLine(locations=[[float(st.session_state.user_location[0]), float(st.session_state.user_location[1])], st.session_state.rota_hedef], color="red", weight=6).add_to(m)
 
-    # Rota Çizgisi Kontrolü
-    if st.session_state.user_location is not None and st.session_state.rota_hedef is not None:
